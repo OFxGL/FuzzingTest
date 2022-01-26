@@ -1,5 +1,3 @@
-#include <cstddef>
-#include <stdint.h>
 #include <string_view>
 
 using namespace std;
@@ -7,22 +5,24 @@ using namespace std;
 class FUZZ
 {
 private:
-	static constexpr string_view m_pattern = "FUZZ";
-    bool m_got;
-
+	const string_view m_pattern;
 public:
-    FUZZ(const uint8_t* data, size_t size) 
-        : m_got(m_pattern.size() == size && 
-                m_pattern == string_view((string_view::value_type*)data, size)) {}
+    FUZZ(const string_view& pattern) : m_pattern(pattern) {}
 
-    inline operator bool() const {return m_got;}
-	inline void operator()() const {if (m_got) throw m_pattern;}
+	void operator()(const string_view& data) const;
 };
+
+void FUZZ::operator()(const string_view& data) const
+{
+    if (m_pattern == data)
+        throw m_pattern;
+}
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
 {
-    FUZZ fuzz(data, size);
-    fuzz();
+    FUZZ fuzz(string_view((string_view::value_type*)data, size));
+    fuzz("FUZZ");
+    fuzz("BUZZ");
 
     return 0;  // Non-zero return values are reserved for future use.
 }
