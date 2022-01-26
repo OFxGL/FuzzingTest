@@ -1,1 +1,10 @@
 language: c++
+primary_contact: "oleg.fokin@harmonicinc.com"
+auto_ccs:
+  - "oleg.fokin@globallogic.com"
+sanitizers:
+  - address
+  - undefined
+  - memory
+architectures:
+  - x86_64
