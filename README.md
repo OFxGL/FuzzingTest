@@ -1,88 +1,95 @@
 ## Fuzzing Keynotes  
 
 ### Getting to know:  
-[Definition](https://en.wikipedia.org/wiki/Fuzzing)  
-[Simple explanation](https://www.guru99.com/fuzz-testing.html)  
+**Fuzzing** or **fuzz testing** is an automated software testing technique that involves providing invalid, unexpected, or random data as inputs to a computer program. The program is then monitored for exceptions such as crashes, failing built-in code assertions, or potential memory leaks. Typically, fuzzers are used to test programs that take structured inputs. This structure is specified, e.g., in a file format or protocol and distinguishes valid from invalid input. An effective fuzzer generates semi-valid inputs that are "valid enough" in that they are not directly rejected by the parser, but do create unexpected behaviors deeper in the program and are "invalid enough" to expose corner cases that have not been properly dealt with – [Wikipedia](https://en.wikipedia.org/wiki/Fuzzing)  
+
+[Fuzz Testing(Fuzzing) Tutorial: What is, Types, Tools & Example](https://www.guru99.com/fuzz-testing.html)  
 [An informative guide on using AFL and libFuzzer](https://blog.f-secure.com/super-awesome-fuzzing-part-one/)  
 [Awesome-Fuzzing Collection](https://github.com/secfigo/Awesome-Fuzzing)  
-[Google fuzzing](https://github.com/google/fuzzing)  
-[Google experience](https://www.usenix.org/sites/default/files/conference/protected-files/enigma_slides_serebryany.pdf)  
+[Google fuzzing tutorials and examples](https://github.com/google/fuzzing)  
+[Google SE experience](https://www.usenix.org/sites/default/files/conference/protected-files/enigma_slides_serebryany.pdf)  
 
 ### Tools:  
-[**libFuzzer**](https://llvm.org/docs/LibFuzzer.html), [google libFuzzer tutorial](https://github.com/google/fuzzing/blob/master/tutorial/libFuzzerTutorial.md) - LLVM integrated  
+[**libFuzzer**](https://llvm.org/docs/LibFuzzer.html), [google libFuzzer tutorial](https://github.com/google/fuzzing/blob/master/tutorial/libFuzzerTutorial.md)  
 [AFL](https://lcamtuf.coredump.cx/afl/) ([repo](https://github.com/google/AFL)), [**AFL++**](https://aflplus.plus/) ([repo](https://github.com/AFLplusplus/AFLplusplus)), [more](https://github.com/google/fuzzing/blob/master/docs/afl-based-fuzzers-overview.md)  
 [Hoggfuzz](https://honggfuzz.dev/) ([repo](https://github.com/google/honggfuzz))  
+[Microsoft OneFuzz](https://github.com/microsoft/onefuzz)  
+[Radamsa](https://gitlab.com/akihe/radamsa)  
 [OSS-Fuzz](https://google.github.io/oss-fuzz/) ([repo](https://github.com/google/oss-fuzz)) - for **open-source software only**  
 [ClusterFuzz](https://google.github.io/clusterfuzz/) ([repo](https://github.com/google/clusterfuzz)) - runs **on GCP only**  
 [ClusterFuzzLite](https://google.github.io/clusterfuzzlite/) ([repo](https://github.com/google/clusterfuzzlite/)) - supports libFuzzer only  
-[Microsoft OneFuzz](https://github.com/microsoft/onefuzz)  
+[GitLab fuzzing](https://docs.gitlab.com/ee/user/application_security/coverage_fuzzing/) ([C++ example](https://gitlab.com/gitlab-org/security-products/demos/coverage-fuzzing/c-cpp-fuzzing-example))  
 
 ### TestCase  
+Fuzz target:  
 ```cpp
-bool FUZZ(const uint8_t* data, size_t size)
+bool fuzz(const uint8_t* data, size_t size)
 {
     return (size >= 3 && data[0] == 'F' && data[1] == 'U' && data[2] == 'Z' && data[3] == 'Z');
 }
 ```
-#### libFuzzer:  
+[Criteria for good fuzzing test cases](https://github.com/google/fuzzing/blob/master/docs/good-fuzz-target.md)  
+
+#### libFuzzer  
+[LibFuzzer](https://llvm.org/docs/LibFuzzer.html) is in-process, coverage-guided, evolutionary fuzzing engine.LibFuzzer is linked with the library under test, and feeds fuzzed inputs to the library via a specific fuzzing entrypoint (aka “target function”); the fuzzer then tracks which areas of the code are reached, and generates mutations on the corpus of input data in order to maximize the code coverage.  
 ```
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
 {
-    FUZZ(data, size);
+    fuzz(data, size);
     return 0; // Non-zero return values are reserved for future use.
 }
 
-clang++ -std=c++17 -stdlib=libstdc++ -g -fsanitize=address,fuzzer fuzzer.cpp -o fuzzer
-./fuzzier -max_total_time=600 -max_len=5 -artifact_prefix=errors/ corpus/
+clang++ -std=c++17 -g -O1 -fsanitize=fuzzer fuzzer.cpp -o fuzzer
+./fuzzier -jobs=4 -max_total_time=600 -max_len=5 -dict=dicts/fuzz.dict -artifact_prefix=errors/ corpus/ seeds/
 ```
 [Dictionaries](https://llvm.org/docs/LibFuzzer.html#dictionaries):  
-```
-./fuzzer -dict=dicts/fuzz.dict
-```
-[Corpus](https://llvm.org/docs/LibFuzzer.html#corpus) (problematic test cases we have had before / regression check):  
-```
-./fuzzer corpus/ seeds/
-```
-When a libFuzzer-based fuzzer is executed with one more directory as arguments, it will first read files from every directory recursively and execute the target function on all of them. Then, any input that triggers interesting code path(s) will be written back into the first corpus directory (in this case, `corpus`).
-Useful `-merge=1` opt.  
+LibFuzzer supports user-supplied dictionaries compatible with AFL  
 
-#### AFL++:  
-preparation:  
+[Corpus](https://llvm.org/docs/LibFuzzer.html#corpus):  
+When a libFuzzer-based fuzzer is executed with one more directory as arguments, it will first read files from every directory recursively and execute the target function on all of them. Then, any input that triggers interesting code path(s) will be written back into the first corpus directory. (Useful `-merge=1`)  
+
+[Structure-Aware Fuzzing](https://github.com/google/fuzzing/blob/master/docs/structure-aware-fuzzing.md) (custom mutators):  
+compression, protobufs([libprotobuf-mutator](https://github.com/google/libprotobuf-mutator)), gRPC API, etc  
+
+#### AFL++  
+[AFL++](https://aflplus.plus/) is the daughter of the American Fuzzy Lop fuzzer by Michał “lcamtuf” Zalewski and was created initially to incorporate all the best features developed in the years for the fuzzers in the AFL family and not merged in AFL cause it is not updated since November 2017.  
+
+Install:  
 ```
 git clone https://github.com/AFLplusplus/AFLplusplus && cd AFLplusplus
 make all
 sudo make install
 export PATH=$PATH:</path/to/AFLplusplus>
-afl-fuzz
 ```
-build:  
+Build:  
 ```
-afl-clang-fast++ -std=c++17 main.cpp -o afl-app
-or
-afl-g++-fast -std=c++17 main.cpp -o afl++-app
+afl-g++-fast -std=c++17 main.cpp -o afl-app
 ```
-run:  
+Run:  
 ```
-afl-fuzz -i seeds/ -o corpus/ -V 300 -- afl++-app
-```
-With Dictionaries:  
-```
-afl-fuzz -x dicts/fuzz.dict -i seeds/ -o corpus/ -V 300 -- afl++-app
+afl-fuzz -x dicts/fuzz.dict -i seeds/ -o corpus/ -D -V 600 -- afl-app
 ```
 
-### CI/CD:  
-**GitHab Actions + ClusterFuzzLite + libFuzer**  
-GitLab runner + ClusterFuzzLite + libFuzer  
-[GitLab fuzzing](https://docs.gitlab.com/ee/user/application_security/coverage_fuzzing/) (libFuzzer), [C++ example](https://gitlab.com/gitlab-org/security-products/demos/coverage-fuzzing/c-cpp-fuzzing-example)  
+### CI/CD  
+CI/CD receipt: **GitHab Actions / GitLab runner + ClusterFuzzLite + libFuzzer**  
 
-### Notes  
-The choice is mostly betwen libFuzzer vs AFL++.  
-* libFuzzer needs test cases to be prepared explicitly whereas AFL++ creates it's internal tast cases automatically (and this is not only the proc but brings more cons - make it unmodifiable, irrelevant and slow)  
-* libFuzzer is integrated into LLVM/clang what make it highly compatible/integrated with other CI/CD tools. But also can be used as a dedicated static lib.  
-  AFL++ supports gcc and clang. But almost none of CI/CD tools declare AFL/AFL++ support.  
-* GitHub & GitLab (+GCP, +Azure) can run libFuzzer-based fuzzers.  
-* libFuzzer is highly flexible with test scenarios - we can customize dictionaries and test corpus/seeds as well keep it orginized.  
-  AFL++ also supports customized dictionaries and test corpus (same file format/can be shared) but less flexibility with its structuring.  
+### Comparison  
+LibFuzzer:  
+* needs test cases preparation  
+* integrated into LLVM/clang  
+* can be used as a static lib  
+* highly compatible with CI/CD tools  
+* seamlessly paired with other sanitizers  
+* highly flexible with test scenarios  
+* supports custom mutators  
+* AFL compatible test corpus  
+
+AFL++:
+* automatically creates test cases (this brings more cons - makes it unmodifiable, less relevant and relatively slow)  
+* supports gcc and clang  
+* rich test results and stats  
+* supports customized dictionaries and test corpus (same file format/can be shared) but less flexibility with its structuring  
+* almost none of CI/CD tools declare AFL/AFL++ support  
 
 ### Conclusion  
-libFuzzer is an excellent tool for fuzzing - functional, lighting fast and integrated in other tools and services.  
+LibFuzzer is an excellent tool for fuzzing - functional, highly customizable, lighting fast and easily integrated with other tools and CI/CD services.  
