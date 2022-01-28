@@ -30,7 +30,7 @@ bool fuzz(const uint8_t* data, size_t size)
 ```
 [Criteria for good fuzzing test cases](https://github.com/google/fuzzing/blob/master/docs/good-fuzz-target.md)  
 
-#### libFuzzer  
+#### LibFuzzer  
 [LibFuzzer](https://llvm.org/docs/LibFuzzer.html) is in-process, coverage-guided, evolutionary fuzzing engine.LibFuzzer is linked with the library under test, and feeds fuzzed inputs to the library via a specific fuzzing entrypoint (aka “target function”); the fuzzer then tracks which areas of the code are reached, and generates mutations on the corpus of input data in order to maximize the code coverage.  
 ```
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
@@ -40,7 +40,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
 }
 
 clang++ -std=c++17 -g -O1 -fsanitize=fuzzer fuzzer.cpp -o fuzzer
-./fuzzier -jobs=4 -max_total_time=600 -max_len=5 -dict=dicts/fuzz.dict -artifact_prefix=errors/ corpus/ seeds/
+./fuzzer -jobs=4 -max_total_time=600 -max_len=5 -dict=dicts/fuzz.dict -artifact_prefix=errors/ corpus/ seeds/
 ```
 [Dictionaries](https://llvm.org/docs/LibFuzzer.html#dictionaries):  
 LibFuzzer supports user-supplied dictionaries compatible with AFL  
@@ -71,7 +71,7 @@ afl-fuzz -x dicts/fuzz.dict -i seeds/ -o corpus/ -D -V 600 -- afl-app
 ```
 
 ### CI/CD  
-CI/CD receipt: **GitHab Actions / GitLab runner + ClusterFuzzLite + libFuzzer**  
+CI/CD formula: **GitHab Actions / GitLab runner + ClusterFuzzLite + libFuzzer**  
 
 ### Comparison  
 LibFuzzer:  
@@ -87,7 +87,7 @@ LibFuzzer:
 AFL++:
 * automatically creates test cases (this brings more cons - makes it unmodifiable, less relevant and relatively slow)  
 * supports gcc and clang  
-* rich test results and stats  
+* rich test results and stats reports  
 * supports customized dictionaries and test corpus (same file format/can be shared) but less flexibility with its structuring  
 * almost none of CI/CD tools declare AFL/AFL++ support  
 
