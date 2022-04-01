@@ -43,13 +43,23 @@ clang++ -std=c++17 -g -O1 -fsanitize=fuzzer fuzzer.cpp -o fuzzer
 ./fuzzer -jobs=4 -max_total_time=600 -max_len=5 -dict=dicts/fuzz.dict -artifact_prefix=errors/ corpus/ seeds/
 ```
 [Dictionaries](https://llvm.org/docs/LibFuzzer.html#dictionaries):  
-LibFuzzer supports user-supplied dictionaries compatible with AFL  
+-dict key. LibFuzzer supports user-supplied dictionaries compatible with AFL  
 
 [Corpus](https://llvm.org/docs/LibFuzzer.html#corpus):  
 When a libFuzzer-based fuzzer is executed with one more directory as arguments, it will first read files from every directory recursively and execute the target function on all of them. Then, any input that triggers interesting code path(s) will be written back into the first corpus directory. (Useful `-merge=1`)  
 
-[Structure-Aware Fuzzing](https://github.com/google/fuzzing/blob/master/docs/structure-aware-fuzzing.md) (custom mutators):  
-compression, protobufs([libprotobuf-mutator](https://github.com/google/libprotobuf-mutator)), gRPC API, etc  
+[Structure-Aware Fuzzing](https://github.com/google/fuzzing/blob/master/docs/structure-aware-fuzzing.md) (custom mutators for: compression, protobufs([libprotobuf-mutator](https://github.com/google/libprotobuf-mutator)), g RPC API, etc)  
+This can be done by defining LLVMFuzzerCustomMutator function where the data contains a random input to be mutated:  
+```
+extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max_size, unsigned int seed);
+```
+[Using libFuzzer as a library](https://llvm.org/docs/LibFuzzer.html#using-libfuzzer-as-a-library)  
+The lib can be found at `/usr/lib/<llvm-version>/lib/clang/<clang-version>/lib/linux/libclang_rt.fuzzer_no_main-<architecture>.a`  
+In our main function to start fuzzing, it can call LLVMFuzzerRunDriver, passing in the program arguments and a callback. This callback is invoked just like LLVMFuzzerTestOneInput, and has the same signature.  
+It’s possible to build our fuzzer with gcc:  
+```
+g++ -g –O1 -std=c++17 fuzzer.cpp main.cpp /usr/lib/llvm-13/lib/clang/13.0.1/lib/linux/libclang_rt.fuzzer_no_main-x86_64.a -lpthread -o fuzzer
+```
 
 #### AFL++  
 [AFL++](https://aflplus.plus/) is the daughter of the American Fuzzy Lop fuzzer by Michał “lcamtuf” Zalewski and was created initially to incorporate all the best features developed in the years for the fuzzers in the AFL family and not merged in AFL cause it is not updated since November 2017.  
@@ -69,6 +79,11 @@ Run:
 ```
 afl-fuzz -x dicts/fuzz.dict -i seeds/ -o corpus/ -D -V 600 -- afl-app
 ```
+It also supports [Custom Mutators](https://aflplus.plus/docs/custom_mutators/)  
+```
+Export AFL_CUSTOM_MUTATOR_LIBRARY="path"
+size_t afl_custom_fuzz(void *data, unsigned char *buf, size_t buf_size, unsigned char **out_buf, unsigned char *add_buf, size_t add_buf_size, size_t max_size);
+```
 
 ### CI/CD  
 CI/CD formula: **GitHab Actions / GitLab runner + ClusterFuzzLite + libFuzzer**  
@@ -86,10 +101,10 @@ LibFuzzer:
 
 AFL++:
 * automatically creates test cases (this brings more cons - makes it unmodifiable, less relevant and relatively slow)  
+* almost none of CI/CD tools declare AFL/AFL++ support  
 * supports gcc and clang  
 * rich test results and stats reports  
-* supports customized dictionaries and test corpus (same file format/can be shared) but less flexibility with its structuring  
-* almost none of CI/CD tools declare AFL/AFL++ support  
+* supports custom mutators  
 
 ### Conclusion  
 LibFuzzer is an excellent tool for fuzzing - functional, highly customizable, lighting fast and easily integrated with other tools and CI/CD services.  
