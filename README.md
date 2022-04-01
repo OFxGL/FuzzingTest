@@ -8,10 +8,11 @@
 [Awesome-Fuzzing Collection](https://github.com/secfigo/Awesome-Fuzzing)  
 [Google fuzzing tutorials and examples](https://github.com/google/fuzzing)  
 [Google SE experience](https://www.usenix.org/sites/default/files/conference/protected-files/enigma_slides_serebryany.pdf)  
+[CI Fuzz](https://help.code-intelligence.com/continuous-fuzzing-setup)  
 
 ### Tools:  
 [**libFuzzer**](https://llvm.org/docs/LibFuzzer.html), [google libFuzzer tutorial](https://github.com/google/fuzzing/blob/master/tutorial/libFuzzerTutorial.md)  
-[AFL](https://lcamtuf.coredump.cx/afl/) ([repo](https://github.com/google/AFL)), [**AFL++**](https://aflplus.plus/) ([repo](https://github.com/AFLplusplus/AFLplusplus)), [more](https://github.com/google/fuzzing/blob/master/docs/afl-based-fuzzers-overview.md)  
+[AFL](https://lcamtuf.coredump.cx/afl/) ([repo](https://github.com/google/AFL)), [**AFL++**](https://aflplus.plus/) ([repo](https://github.com/AFLplusplus/AFLplusplus), [example](https://github.com/antonio-morales/Fuzzing101/tree/main/Exercise%201)), [more](https://github.com/google/fuzzing/blob/master/docs/afl-based-fuzzers-overview.md)  
 [Hoggfuzz](https://honggfuzz.dev/) ([repo](https://github.com/google/honggfuzz))  
 [Microsoft OneFuzz](https://github.com/microsoft/onefuzz)  
 [Radamsa](https://gitlab.com/akihe/radamsa)  
